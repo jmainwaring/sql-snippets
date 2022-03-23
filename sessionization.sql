@@ -1,0 +1,34 @@
+-- Sessionization
+
+/* 
+Challenge: given a table with user IDs and timestamps for each action on the website, group these actions into
+user sessions/'flurries'. A new session starts if more than ten seconds goes by for the user without any new activity
+*/
+
+WITH surrounding_ts AS (
+    SELECT
+        * 
+        , LAG(timestamp) OVER (PARTITION BY customer_id ORDER BY timestamp) AS prev_event_ts
+        , LEAD(timestamp) OVER (PARTITION BY customer_id ORDER BY timestamp) AS next_event_ts
+    FROM raw_events
+),
+
+time_diff AS (
+    SELECT
+        *
+        , DATEDIFF(prev_ts, ts, ‘second’) AS time_since_prev_event
+        , DATEDIFF(ts, next_ts, ‘second’) AS time_until_next_event
+    FROM surrounding_ts
+),
+
+flurry_start_end AS ( 
+    SELECT 
+        ts
+        , CASE WHEN (time_since_prev_event is NULL OR time_since_prev_event > 10) THEN 1 ELSE 0 END AS is_flurry_start
+        , CASE WHEN (time_until_next_event is NULL OR time_until_next_event > 10) THEN 1 ELSE 0 END AS is_flurry_end
+    FROM time_diff
+)
+
+SELECT
+    ?
+FROM flurry_start_end
