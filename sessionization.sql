@@ -34,7 +34,7 @@ session_id_creation AS (
     SELECT
           user_id
         , ts
-        , CASE WHEN is_flurry_start THEN ROW_NUMBER() OVER (ORDER BY ts) ELSE NULL END AS initial_session_id
+        , CASE WHEN is_flurry_start THEN ROW_NUMBER() OVER (ORDER BY ts) -> MD5(user_id || ts) ELSE NULL END AS initial_session_id
     FROM flurry_start_end
 ),
 
